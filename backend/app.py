@@ -5,20 +5,11 @@ from botocore.exceptions import ClientError
 import logging
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 
-# Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
-# Configure AWS credentials
-boto3.setup_default_session(
-    aws_access_key_id='fakeAccessKeyId',
-    aws_secret_access_key='fakeSecretAccessKey',
-    region_name='us-west-2'
-)
-
-# Configure DynamoDB
-dynamodb = boto3.resource('dynamodb', endpoint_url='http://localhost:8000')
+dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('Users')
 
 @app.route('/register', methods=['POST'])
@@ -51,28 +42,22 @@ def register():
 def calculate_score():
     logging.debug("Received breathing exercise data: %s", request.data)
     data = request.get_json()
-    
-    # Extract data from the request
     age = data.get('age')
     gender = data.get('gender')
     breath_hold_time = data.get('breathHoldTime')
-    
-    # Basic validation
+
     if not age or not gender or not breath_hold_time:
         return jsonify({"error": "Missing required parameters"}), 400
-    
+
     try:
-        # Calculate the score
         score = breath_hold_time * 2
         if gender.lower() == 'male':
             score += 10
         elif gender.lower() == 'female':
             score += 15
-        
         score -= int(age) / 2
 
         logging.debug("Score calculated: %s", score)
-
         return jsonify({"score": score}), 200
     except Exception as e:
         logging.error("Error calculating score: %s", e)
